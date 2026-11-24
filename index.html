@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mindful Handwriting: n</title>
+<style>
+:root{--bg:#f4f1ea;--fg:#2b2b2b;--muted:#6b6b6b;--card:#ffffff;--accent:#2f6fd0;--accent-fg:#fff;--line:#d8d2c4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f2023;--fg:#ececec;--muted:#a0a0a0;--card:#2a2b2f;--accent:#6aa3ff;--accent-fg:#101114;--line:#3b3d42}}
+:root[data-theme="dark"]{--bg:#1f2023;--fg:#ececec;--muted:#a0a0a0;--card:#2a2b2f;--accent:#6aa3ff;--accent-fg:#101114;--line:#3b3d42}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Trebuchet MS",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:0 0 12px}
+.paper{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:6px}
+svg{display:block;width:100%;height:auto}
+.cue{display:flex;align-items:center;justify-content:center;gap:24px;margin:14px 0;flex-wrap:wrap}
+#word{font-size:clamp(2rem,7vw,3.6rem);font-weight:700;min-width:7ch;text-align:center}
+.dots{display:flex;gap:12px}
+.dots i{width:22px;height:22px;border-radius:50%;background:var(--line);transition:background .05s}
+.dots i.on{background:var(--accent)}
+.dots i.one.on{outline:3px solid var(--accent);outline-offset:3px}
+.controls{background:var(--card);border-radius:12px;padding:14px;display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center}
+.controls label{display:flex;align-items:center;gap:8px;font-size:.95rem}
+button{font:inherit;border:0;border-radius:8px;padding:10px 20px;background:var(--accent);color:var(--accent-fg);cursor:pointer;font-weight:700}
+button.alt{background:transparent;color:var(--fg);border:1px solid var(--line)}
+select{font:inherit;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+#letter{font-size:1.3rem;font-weight:700}
+input[type=range]{width:160px}
+#bpmv{font-weight:700;min-width:3ch;display:inline-block}
+.clean .controls,.clean h1{display:none}
+#showbtn{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));opacity:.25;padding:6px 10px;font-size:.8rem}
+#showbtn:hover{opacity:1}
+.hint{color:var(--muted);font-size:.85rem;margin-top:10px}
+.clean .hint{display:none}
+</style>
+</head>
+<body>
+<main id="app">
+<h1 id="ttl">Mindful Handwriting: the letter n</h1>
+<div class="paper"><svg id="sheet" viewBox="0 0 900 560" role="img" aria-label="Three rows of writing lines, each with two dotted lines above a solid line, with a letter being written"></svg></div>
+<div class="cue"><div class="dots" id="dots"><i class="one"></i><i></i><i></i><i></i></div><div id="word">Ready</div></div>
+<div class="controls">
+<button id="go">Start</button>
+<label>Letter <select id="letter"><option>a</option><option>b</option><option>c</option><option>d</option><option>e</option><option>f</option><option>g</option><option>h</option><option>i</option><option>j</option><option>k</option><option>l</option><option>m</option><option selected>n</option><option>o</option><option>p</option><option>q</option><option>r</option><option>s</option><option>t</option><option>u</option><option>v</option><option>w</option><option>x</option><option>y</option><option>z</option></select></label>
+<label>Letter size <input id="size" type="range" min="50" max="100" step="5" value="100"> <span id="sizev">100</span>%</label>
+<label>Tempo <input id="bpm" type="range" min="40" max="140" value="80"> <span id="bpmv">80</span> bpm</label>
+<label>Visual delay <input id="sync" type="range" min="-200" max="300" step="10" value="0"> <span id="syncv">0</span> ms</label>
+<label>Rest beats <select id="mode"><option value="rest">rest</option><option value="sound">letter sound</option></select></label>
+<label><input type="checkbox" id="click" checked> Metronome click</label>
+<label><input type="checkbox" id="guide" checked> Light guide letters (rows 1–2)</label>
+<label><input type="checkbox" id="words" checked> Show cue words</label>
+<button class="alt" id="hide">Hide controls</button>
+</div>
+<p class="hint">Each stroke starts on its own beat, and any beats left in the bar are rests (or the letter sound). Space starts and stops. Press H to hide or show the controls for screen recording. When the sheet is full it clears and starts again.</p>
+</main>
+<button class="alt" id="showbtn" hidden>Show controls</button>
+<script>
+(function(){
+var COLS=10,ROWS=3,N=30,PITCH=180,S=1;
+/* Letter strokes: [path, cue word]. Local coordinates: y=0 is the middle dotted line, y=60 the solid line, y=-60 the top dotted line. One stroke per beat. */
+var L={
+y:{w:38,s:[["M0 0L18 60","down"],["M38 0L16 70C8 95 2 104 -8 98","tail"]]},
+e:{w:38,s:[["M1 34L36 22","up"],["M37 22C35 8 28 0 19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C27 60 33 56 37 50","around"]]},
+f:{w:28,s:[["M28 -46C28 -60 10 -62 10 -44L10 60","over"],["M0 0L26 0","across"]]},
+g:{w:38,s:[["M30 8C27 3 23 0 19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C29.5 60 38 46.6 38 30L38 0","around"],["M38 0L38 80C38 102 14 108 2 98","tail"]]},
+j:{w:0,s:[["M0 0L0 84C0 102 -12 108 -20 98","down"],["M0 -24L0 -23","dot"]]},
+k:{w:32,s:[["M0 -60L0 60","down"],["M30 0L1 34","over"],["M10 28L32 60","kick"]]},
+p:{w:38,s:[["M0 0L0 108","down"],["M0 108L0 22C6 2 38 0 38 30C38 58 10 62 0 52","over"]]},
+q:{w:38,s:[["M30 8C27 3 23 0 19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C29.5 60 38 46.6 38 30L38 0","around"],["M38 0L38 108","down"]]},
+s:{w:30,s:[["M28 8C24 1 18 -1 14 0C5 1 1 9 5 16C8 22 15 25 21 28","over"],["M21 28C29 32 33 40 30 48C27 57 18 61 12 60C6 59 2 55 0 50","under"]]},
+v:{w:38,s:[["M0 0L19 60","down"],["M19 60L38 0","up"]]},
+w:{w:60,s:[["M0 0C3 30 8 60 15 60C22 60 27 30 30 0","scoop"],["M30 0C33 30 38 60 45 60C52 60 57 30 60 0","scoop"]]},
+x:{w:38,s:[["M0 0L38 60","down"],["M0 60L38 0","up"]]},
+z:{w:34,s:[["M0 0L34 0","across"],["M34 0L0 60","down"],["M0 60L34 60","across"]]},
+a:{w:38,s:[["M30 8C27 3 23 0 19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C29.5 60 38 46.6 38 30L38 0","round"],["M38 0L38 60","down"]]},
+b:{w:38,s:[["M0 -60L0 60","down"],["M0 60L0 22C6 4 38 2 38 30C38 58 10 62 0 52","round"]]},
+c:{w:34,s:[["M33 12C28 4 24 0 19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C25 60 30 56 34 50","round"]]},
+d:{w:38,s:[["M30 8C27 3 23 0 19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C29.5 60 38 46.6 38 30L38 -60","round"],["M38 -60L38 60","down"]]},
+h:{w:38,s:[["M0 -60L0 60","down"],["M0 60L0 30C4 4 38 4 38 24L38 60","over"]]},
+i:{w:0,s:[["M0 0L0 60","down"],["M0 -24L0 -23","dot"]]},
+l:{w:0,s:[["M0 -60L0 60","down"]]},
+m:{w:62,s:[["M0 0L0 60","down"],["M0 60L0 30C3 4 31 4 31 24L31 60","over"],["M31 60L31 30C34 4 62 4 62 24L62 60","over"]]},
+n:{w:38,s:[["M0 0L0 60","down"],["M0 60L0 30C4 4 38 4 38 24L38 60","over"]]},
+o:{w:38,s:[["M19 0C8.5 0 0 13.4 0 30C0 46.6 8.5 60 19 60C29.5 60 38 46.6 38 30C38 13.4 29.5 0 19 0","round"]]},
+r:{w:30,s:[["M0 0L0 60","down"],["M0 60L0 30C4 8 16 4 30 8","over"]]},
+t:{w:26,s:[["M13 -40L13 60","down"],["M0 0L26 0","across"]]},
+u:{w:38,s:[["M0 0L0 38C0 66 38 66 38 38L38 0","round"],["M38 0L38 60","down"]]}
+};
+var $=function(id){return document.getElementById(id)};
+var sheet=$("sheet"),word=$("word"),dots=[].slice.call(document.querySelectorAll("#dots i"));
+var key="n",cur=L.n,slots=[],guides=[],pen=null;
+function build(){
+S=+$("size").value/100;PITCH=180*S;ROWS=Math.floor((540-168*S)/PITCH)+1;COLS=Math.floor((810-38*S)/(160*S))+1;N=COLS*ROWS;var SW=Math.max(7*S,4.5)/S;
+var h="",r,c;
+for(r=0;r<ROWS;r++){var t=20+r*PITCH;
+h+='<line x1="20" x2="880" y1="'+t+'" y2="'+t+'" stroke="#9db4d6" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round"/>'+
+'<line x1="20" x2="880" y1="'+(t+60*S)+'" y2="'+(t+60*S)+'" stroke="#9db4d6" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round"/>'+
+'<line x1="20" x2="880" y1="'+(t+120*S)+'" y2="'+(t+120*S)+'" stroke="#9db4d6" stroke-width="2"/>';}
+function tf(rr,cc){return 'transform="translate('+(70+cc*160*S+(38-cur.w)/2*S)+' '+(20+rr*PITCH+60*S)+') scale('+S+')"'}
+for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){
+h+='<g class="guide" data-row="'+r+'" '+tf(r,c)+' stroke="#c9c9c9" stroke-width="'+SW+'" fill="none" stroke-linecap="round" stroke-linejoin="round">'+cur.s.map(function(p){return '<path d="'+p[0]+'"/>'}).join('')+'</g>';}
+for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){
+h+='<g class="ink" data-x="'+(70+c*160*S+(38-cur.w)/2*S)+'" data-y="'+(20+r*PITCH+60*S)+'" '+tf(r,c)+' stroke="#1d3f8f" stroke-width="'+SW+'" fill="none" stroke-linecap="round" stroke-linejoin="round">'+cur.s.map(function(p){return '<path pathLength="1" stroke-dasharray="1 2" style="opacity:0" d="'+p[0]+'"/>'}).join('')+'</g>';}
+h+='<circle id="pen" r="8" fill="#e0482b" opacity="0"/>';
+sheet.innerHTML=h;
+pen=$("pen");pen.setAttribute("r",Math.max(5,8*S));
+slots=[].slice.call(sheet.querySelectorAll("g.ink")).map(function(g){
+return{x:+g.getAttribute("data-x"),y:+g.getAttribute("data-y"),st:[].slice.call(g.querySelectorAll("path")).map(function(p){return{el:p,len:p.getTotalLength()}})}});
+guides=[].slice.call(sheet.querySelectorAll(".guide"));
+setGuide();
+}
+function setGuide(){var on=$("guide").checked;guides.forEach(function(g){g.style.display=(on&&+g.getAttribute("data-row")<2)?"":"none"})}
+$("guide").onchange=setGuide;
+
+var ctx=null,running=false,anchorT=0,anchorB=0,nextNo=0,raf=0;
+function spb(){return 60/+$("bpm").value}
+function beatPos(now){return anchorB+(now-anchorT)/spb()}
+function click(time,accent){if(!$("click").checked)return;var o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=accent?1500:1000;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(0.0001,time);g.gain.exponentialRampToValueAtTime(accent?0.7:0.45,time+0.004);g.gain.exponentialRampToValueAtTime(0.0001,time+0.06);o.start(time);o.stop(time+0.08)}
+function schedule(){var now=ctx.currentTime;while(anchorT+(nextNo-anchorB)*spb()<now+0.15){click(anchorT+(nextNo-anchorB)*spb(),nextNo%4===0);nextNo++}}
+function cl(v){return v<0?0:v>1?1:v}
+function sk(f){var p=cl(f/Math.min(0.7,0.3/spb()));return 1-(1-p)*(1-p)}
+function vlat(){var l=(ctx.outputLatency||0)+(ctx.baseLatency||0);return l+(+$("sync").value)/1000}
+function setP(path,p){path.style.opacity=p>0?1:0;path.style.strokeDashoffset=1-p}
+function render(bp){
+var slot=-1,w=0,i,k;if(bp>=0){slot=Math.floor(bp/4)%N;w=bp%4}
+for(i=0;i<N;i++){var s=slots[i];
+for(k=0;k<s.st.length;k++){var p;if(bp<0||i>slot)p=0;else if(i<slot)p=1;else p=sk(w-k);setP(s.st[k].el,p)}}
+var ns=cur.s.length,beat=bp<0?-1:Math.floor(w);
+if(bp>=0&&beat<ns&&(w%1)<0.85){var sl=slots[slot],st=sl.st[beat],pt=st.el.getPointAtLength(sk(w-beat)*st.len);pen.setAttribute("cx",pt.x*S+sl.x);pen.setAttribute("cy",pt.y*S+sl.y);pen.setAttribute("opacity",1)}else pen.setAttribute("opacity",0);
+dots.forEach(function(d,j){d.classList.toggle("on",j===beat)});
+var txt="Ready";if(bp>=0){txt=beat<ns?cur.s[beat][1]:($("mode").value==="sound"?"/"+key+"/":"rest")}
+word.textContent=txt;word.style.visibility=$("words").checked?"visible":"hidden"}
+function frame(){if(!running)return;schedule();render(beatPos(ctx.currentTime-vlat()));raf=requestAnimationFrame(frame)}
+function start(){var AC=window.AudioContext||window.webkitAudioContext;if(!ctx)ctx=new AC();if(ctx.state==="suspended")ctx.resume();
+anchorT=ctx.currentTime+0.4;anchorB=0;nextNo=0;running=true;$("go").textContent="Stop";frame()}
+function stop(){running=false;cancelAnimationFrame(raf);$("go").textContent="Start";render(-1);word.style.visibility="visible";word.textContent="Ready"}
+function toggle(){running?stop():start()}
+$("go").onclick=toggle;
+$("bpm").oninput=function(){$("bpmv").textContent=this.value;if(running){var now=ctx.currentTime,bp=beatPos(now);anchorB=bp;anchorT=now;nextNo=Math.max(nextNo,Math.ceil(bp))}};
+$("sync").oninput=function(){$("syncv").textContent=this.value};
+$("size").oninput=function(){$("sizev").textContent=this.value;build();if(running){anchorT=ctx.currentTime+0.4;anchorB=0;nextNo=0}else{render(-1)}};
+$("letter").onchange=function(){key=this.value;cur=L[key];$("ttl").textContent="Mindful Handwriting: the letter "+key;document.title="Mindful Handwriting: "+key;build();
+if(running){anchorT=ctx.currentTime+0.4;anchorB=0;nextNo=0}else{render(-1)}this.blur()};
+function setClean(on){$("app").classList.toggle("clean",on);$("showbtn").hidden=!on}
+$("hide").onclick=function(){setClean(true)};$("showbtn").onclick=function(){setClean(false)};
+document.addEventListener("keydown",function(e){var tag=(e.target.tagName||"").toLowerCase();
+if(e.code==="Space"&&tag!=="input"&&tag!=="select"){e.preventDefault();toggle()}
+else if((e.key==="h"||e.key==="H")&&tag!=="select"){setClean(!$("app").classList.contains("clean"))}});
+build();render(-1)
+})();
+</script>
+</body>
+</html>
